@@ -1,5 +1,5 @@
 import { Token } from '../lexer/token'
-import { eof, single, take } from '../lexer/find'
+import { single, take } from '../lexer/find'
 import { tokenize } from '../lexer/lexer'
 
 const src = `(2 * 3) / 6`
@@ -10,9 +10,8 @@ const Slash = Token.kind('Slash', single('/'))
 const OpenParen = Token.kind('OpenParen', single('('))
 const CloseParen = Token.kind('CloseParen', single(')'))
 const Whitespace = Token.kind('Whitespace', take(/^[^\S\r\n]+/))
-const EndOfFile = Token.kind('EndOfFile', eof)
 
-const kinds = [Number, Asterisk, Slash, OpenParen, CloseParen, Whitespace, EndOfFile]
+const kinds = [Number, Asterisk, Slash, OpenParen, CloseParen, Whitespace]
 const skip = [Whitespace]
 
 const result = tokenize(src, kinds, skip)

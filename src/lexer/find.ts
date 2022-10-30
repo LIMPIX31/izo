@@ -4,8 +4,6 @@ export const take = (regex: RegExp, group = 0) => (src: string) =>
 export const single = (symbol: string) => (src: string) =>
   src[0] === symbol ? 1 : -1
 
-export const eof = (src: string) => src.length === 0 ? 0 : -1
-
 export const ifMatch = (
   origin: (src: string) => number,
   then: () => void,
