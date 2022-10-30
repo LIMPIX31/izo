@@ -21,7 +21,6 @@ export class Lexer {
   next() {
     for (const kind of this.kinds) {
       const result = kind.tokenize(this.src)
-      console.log(kind.name, result)
       if (result === -1) continue
       const slice = this.src.slice(0, result)
       this.src = this.src.slice(result, this.src.length)
