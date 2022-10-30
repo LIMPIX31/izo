@@ -20,4 +20,6 @@ class CustomLexer extends Lexer {
 }
 
 const result = new CustomLexer(src).tokenizeAll()
-console.log(result.map(v => v.display()).join('\n'))
+console.log('Simple\n\n', result.map(v => v.display()).join('\n'))
+
+console.log('Recursive\n\n', new CustomLexer("`Hey ${`I'm recursive ${2 * 3}`}`").tokenizeAll().map(v => v.display()).join('\n'))
