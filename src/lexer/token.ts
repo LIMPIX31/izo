@@ -14,20 +14,18 @@ export abstract class Token implements Display {
     throw new AbstractToken
   }
 
-  static kind(name: string, tokenize: (src: string) => number) {
+  static kind(name: string, tokenize?: (src: string) => number) {
     const Clazz = namedClass(
       class extends Token {
-        static tokenize = tokenize
+        static tokenize = tokenize ?? Token.tokenize
         static value = (value: string, span: Span): Token => new Clazz(value, span)
       },
       name)
     return Clazz
   }
 
-  // Поскольку нельзя создать экземпляр абстрактного класса,
-  // нужен другой способ
   static value(value: string, span: Span): Token {
-    throw new AbstractToken // Abstract token can't be used
+    throw new AbstractToken
   }
 }
 
