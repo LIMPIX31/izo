@@ -1,18 +1,16 @@
-import { Token } from '../lexer/token'
-import { single, take } from '../lexer/find'
-import { tokenize } from '../lexer/lexer'
+import { Lexer, tokenize } from '../lexer/lexer'
+import { kind } from '../lexer/builder'
 
 const src = `(2 * 3) / 6`
 
-const Number = Token.kind('Number', take(/^\d+/))
-const Asterisk = Token.kind('Asterisk', single('*'))
-const Slash = Token.kind('Slash', single('/'))
-const OpenParen = Token.kind('OpenParen', single('('))
-const CloseParen = Token.kind('CloseParen', single(')'))
-const Whitespace = Token.kind('Whitespace', take(/^[^\S\r\n]+/))
+const Number = kind('Number').main(/\d+/)
+const Asterisk = kind('Asterisk').plain('*')
+const Slash = kind('Slash').plain('/')
+const OpenParen = kind('OpenParen').plain('(')
+const CloseParen = kind('CloseParen').plain(')')
+const Whitespace = kind('Whitespace').main(/[^\S\r\n]+/)
 
 const kinds = [Number, Asterisk, Slash, OpenParen, CloseParen, Whitespace]
-const skip = [Whitespace]
 
-const result = tokenize(src, kinds, skip)
+const result = tokenize(new Lexer(src, kinds))
 console.log(result.map(v => v.display()).join('\n'))
