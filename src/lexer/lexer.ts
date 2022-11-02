@@ -1,10 +1,9 @@
-import { Token, TokenConstructor } from './token'
 import { Span } from './span'
-import { UnexpectedEndOfFile } from './errors'
+import { UnexpectedToken } from './errors'
+import { KindBuilder } from './builder'
+import { Token } from './token'
 
 export class Lexer {
-  // Токенизированные токены
-  readonly tokens: Token[] = []
   // Длина проанализированного текста
   private index = 0
 
@@ -12,24 +11,19 @@ export class Lexer {
     // Берём на вход исходник
     private src: string,
     // Виды(kinds) токенов
-    private readonly kinds: TokenConstructor[],
-    // Виды токенов, который нам не нужны и их нужно исключить
-    // Например пробелы или комментарии
-    private readonly skip: TokenConstructor[] = [],
+    private readonly kinds: KindBuilder[],
   ) {}
 
   next() {
-    for (const kind of this.kinds) {
+    for (const builder of this.kinds) {
+      const kind = builder.build()
       const result = kind.tokenize?.(this.src) ?? -1
       if (result === -1) continue
       const slice = this.src.slice(0, result)
       this.src = this.src.slice(result, this.src.length)
-      const token = kind.value(slice, new Span(this.index, this.index += result))
-      if (this.skip.includes(kind)) return token
-      this.tokens.push(token)
-      return token
+      return new kind(slice, new Span(this.index, this.index += result))
     }
-    throw new UnexpectedEndOfFile
+    throw new UnexpectedToken
   }
 
   // Реализуем итератор
@@ -45,16 +39,10 @@ export class Lexer {
   get done() {
     return this.src.length === 0
   }
-
-  // Токенизируем всё сразу
-  tokenizeAll() {
-    while (!this.done)
-      this.next()
-    return this.tokens
-  }
 }
 
-export const tokenize = (src: string, kinds: TokenConstructor[], skip?: TokenConstructor[]) => {
-  const lexer = new Lexer(src, kinds, skip)
-  return lexer.tokenizeAll()
+export const tokenize = (lexer: Lexer) => {
+  const tokens: Token[] = []
+  while (!lexer.done) tokens.push(lexer.next())
+  return tokens
 }
