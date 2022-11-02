@@ -8,6 +8,8 @@ export const format = (input: string, ...args: any[]) => {
   })
 }
 
+export const escapeRegex = (s: string) => s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')
+
 export interface Display {
   display(): string
 }
