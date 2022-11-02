@@ -15,14 +15,23 @@ export class Lexer {
   ) {}
 
   next() {
+    // Выполняем проход по всем видам токенов
     for (const builder of this.kinds) {
+      // Билдим токен
       const kind = builder.build()
+      // Ищем токен
       const result = kind.tokenize?.(this.src) ?? -1
+      // Если не нашли, то идём дальше
       if (result === -1) continue
+      // Вырезаем токен из исходника
       const slice = this.src.slice(0, result)
+      // и обрезаем сам исходник
       this.src = this.src.slice(result, this.src.length)
+      // возвращаем экземпляр токена
       return new kind(slice, new Span(this.index, this.index += result))
     }
+    // Если ни один из токенов не дал о себе знать,
+    // то мы наткнулись на неизвестную или неверную часть программы
     throw new UnexpectedToken
   }
 
