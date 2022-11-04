@@ -6,7 +6,7 @@ export class Token implements Display {
   constructor(readonly value: string, readonly span: Span) {}
 
   display(): string {
-    return `(${this.span.start}:${this.span.end}) [${this.constructor.name}: ${this.value}]`
+    return `(${this.span.start}:${this.span.end}) [${this.constructor.name}: ${this.value.replaceAll('\n', '\\n').replaceAll(' ', '•')}]`
   }
 
   static tokenize(src: string): number {
