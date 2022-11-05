@@ -1,7 +1,5 @@
 import { Token } from './token'
-import { AnonymousToken } from './errors'
-import { namedClass } from '../utils/class'
-import { escapeRegex } from '../utils/string'
+import { escapeRegex, namedClass } from '../utils'
 
 type GroupString = string | RegExp
 type GroupValue = GroupString | (() => GroupString)
@@ -19,132 +17,105 @@ interface Group {
   escape?: boolean
 }
 
-export class KindBuilder {
-  // Вид токена
-  private _name?: string
-  // Группы токенизации, по простому просто части одного
-  // регулярного выражения
-  private _groups: Group[] = []
-  // Условия при соблюдении которых токен будет засчитываться
-  private _conditions: Condition[] = []
-  // Подписчики. Они будут вызваны если токен будет найден
-  private _subscribers: Subscriber[] = []
+export const kind = (name: string) => {
+  const Class = namedClass(class extends Token {
+    private static readonly _groups: Group[] = []
+    private static readonly _conditions: Condition[] = []
+    private static readonly _subscribers: Subscriber[] = []
 
-  // Regex группа может быть вычислена
-  // resolveGroup вернёт вычисленную группу,
-  // если её можно вычислить
-  private static resolveGroup(group: GroupValue) {
-    return typeof group === 'function' ? group() : group
-  }
-
-  // Устанавливаем имя
-  name(name: string): this {
-    this._name = name.trim().replaceAll(' ', '_')
-    return this
-  }
-
-  // Добавляем группу(ы)
-  group(...parts: GroupValue[]): this{
-    this._groups.push(...parts.map(value => ({ value })))
-    return this
-  }
-
-  // Устанавливаем главную группу,
-  // ту, длину которой засчитает лексер
-  main(part: GroupValue): this {
-    this._groups.push({ value: part, main: true })
-    return this
-  }
-
-  // Добавляем разрешающее условие(я)
-  allow(...conditions: ConditionFn[]): this {
-    this._conditions.push(...conditions.map(fn => ({ fn })))
-    return this
-  }
-  // Добавляем запрещающее условие(я)
-  disallow(...conditions: ConditionFn[]): this {
-    this._conditions.push(...conditions.map(fn => ({ fn, not: true })))
-    return this
-  }
-
-  // Устанавливаем группу для последовательности символов
-  plain(text: GroupValue): this {
-    this._groups.push({ value: text, escape: true, main: true })
-    return this
-  }
-
-  // Добавляем подписчика
-  on(...subscriber: Subscriber[]): this {
-    this._subscribers.push(...subscriber)
-    return this
-  }
-
-  // Оповещаем подписчиков об успешной токенизации
-  private emit(value: number) {
-    this._subscribers.forEach(s => s(value))
-  }
-
-  // Компилируем все условия и получаем полное регулярное выражение
-  // при соблюдении всех условий
-  private compile(doMatch = true): RegExp | undefined {
-    // Собираем результаты условий
-    for (const condition of this._conditions) {
-      // Вычисляем результат
-      let result = condition.fn()
-      // Меняем на противоположный, если добавляли через
-      // disallow
-      if (condition.not) result = !result
-      if (!result) {
-        doMatch = false
-        return
-      }
+    private static resolveGroup(group: GroupValue) {
+      return typeof group === 'function' ? group() : group
     }
-    // Формируем регулярное выражение
-    return RegExp(`^${this._groups.map(g => {
-      // Вычисляем группу
-      const group = KindBuilder.resolveGroup(g.value)
-      // Проверяем разные кейсы и в зависимости от этого
-      // устанавливаем конечное значение группы
-      const value = typeof group === 'object' ? group.source : g.escape ? escapeRegex(group) : group
-      // оборачиваем группу
-      return `(${value})`
-     }).join('')}`)
-  }
 
-  // Находим индекс главной группы
-  private getMainIndex() {
-    // Прибавляем 1, поскольку метод match возвращает
-    // всё совпадение, а потом группы.
-    // И смотрите как удобно, если главной группы нет,
-    // то берём всё, тк -1 + 1 = 0, а 0 это всё совпадение
-    return this._groups.findIndex(g => g.main === true) + 1
-  }
+    /**
+     * Adds a new regular expression group
+     * @param parts - one or more regex groups
+     */
+    static group(...parts: GroupValue[]): typeof Class {
+      Class._groups.push(...parts.map(value => ({ value })))
+      return Class
+    }
 
-  // Собираем конструктор токена
-  build() {
-    // Без этого не как
-    const builder = this
-    if (!this._name) throw new AnonymousToken
-    const Clazz = namedClass(
-      class extends Token {
-        static tokenize(src: string) {
-          // Компилируем выражение, если его нет, то пропускаем токен
-          const regex = builder.compile()
-          if (!regex) return -1
-          // матчим строку
-          const matches = src.match(regex)
-          if (!matches) return -1
-          // Берём главную группу
-          const result =  matches[builder.getMainIndex()].length
-          // Оповещаем подписчиков об успешной находке
-          if (result >= 0) builder.emit(result)
-          // Возвращаем длину токена
-          return result
+    /**
+     * Assigns the main group to a regular expression,
+     * the other groups will be discarded when length
+     * is taken into account
+     * @param part - regex main group
+     */
+    static main(part: GroupValue): typeof Class {
+      Class._groups.push({ value: part, main: true })
+      return Class
+    }
+
+    /**
+     * Applies the permissive condition
+     * @param conditions
+     */
+    static allow(...conditions: ConditionFn[]): typeof Class {
+      Class._conditions.push(...conditions.map(fn => ({ fn })))
+      return Class
+    }
+
+    /**
+     * Applies a forbidding condition.
+     * @param conditions
+     */
+    static disallow(...conditions: ConditionFn[]): typeof Class {
+      Class._conditions.push(...conditions.map(fn => ({ fn, not: true })))
+      return Class
+    }
+
+    /**
+     * Assigns the main group, as opposed to the main matches plain text.
+     * @param text - plain text to match
+     */
+    static plain(text: GroupValue): typeof Class {
+      Class._groups.push({ value: text, escape: true, main: true })
+      return Class
+    }
+
+    /**
+     * Subscribe to Successful Matching
+     * @param subscriber
+     */
+    static on(...subscriber: Subscriber[]): typeof Class {
+      Class._subscribers.push(...subscriber)
+      return Class
+    }
+
+    private static emit(value: number) {
+      Class._subscribers.forEach(s => s(value))
+    }
+
+    private static compile(doMatch = true): RegExp | undefined {
+      for (const condition of this._conditions) {
+        let result = condition.fn()
+        if (condition.not) result = !result
+        if (!result) {
+          doMatch = false
+          return
         }
-      },
-      this._name)
-    return Clazz
-  }
-}
+      }
+      return RegExp(`^${this._groups.map(g => {
+        const group = Class.resolveGroup(g.value)
+        const value = typeof group === 'object' ? group.source : g.escape ? escapeRegex(group) : group
+        return `(${value})`
+      }).join('')}`)
+    }
 
-export const kind = (name: string) => new KindBuilder().name(name)
+    private static getMainIndex() {
+      return Class._groups.findIndex(g => g.main === true) + 1
+    }
+
+    static tokenize(src: string) {
+      const regex = Class.compile()
+      if (!regex) return -1
+      const matches = src.match(regex)
+      if (!matches) return -1
+      const result: number = matches[Class.getMainIndex()].length
+      if (result >= 0) Class.emit(result)
+      return result
+    }
+  }, name)
+  return Class
+}

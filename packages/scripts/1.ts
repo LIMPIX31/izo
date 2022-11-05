@@ -1,5 +1,4 @@
-import { Lexer, tokenize } from '../lexer/lexer'
-import { kind } from '../lexer/builder'
+import { kind, Lexer, tokenize } from '../common'
 
 const src = `(2 * 3) / 6`
 

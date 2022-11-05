@@ -1,41 +1,30 @@
 import { Span } from './span'
-import { UnexpectedToken } from './errors'
-import { KindBuilder } from './builder'
-import { Token } from './token'
+import { UnexpectedToken } from '../errors'
+import { Token, TokenKind } from './token'
 
 export class Lexer {
-  // Длина проанализированного текста
   private index = 0
 
   constructor(
-    // Берём на вход исходник
-    private src: string,
-    // Виды(kinds) токенов
-    private readonly kinds: KindBuilder[],
+    private readonly src: string,
+    private readonly kinds: TokenKind[],
   ) {}
 
+  /**
+   * Calculates the next token, if none of the tokens were detected,
+   * the {@link UnexpectedToken} exception will be thrown
+   *
+   * @throws {@link UnexpectedToken}
+   */
   next() {
-    // Выполняем проход по всем видам токенов
-    for (const builder of this.kinds) {
-      // Билдим токен
-      const kind = builder.build()
-      // Ищем токен
-      const result = kind.tokenize?.(this.src) ?? -1
-      // Если не нашли, то идём дальше
+    for (const kind of this.kinds) {
+      const result = kind.tokenize?.(this.src.slice(this.index)) ?? -1
       if (result === -1) continue
-      // Вырезаем токен из исходника
-      const slice = this.src.slice(0, result)
-      // и обрезаем сам исходник
-      this.src = this.src.slice(result, this.src.length)
-      // возвращаем экземпляр токена
-      return new kind(slice, new Span(this.index, this.index += result))
+      return new kind(this.src.slice(this.index, this.index + result), new Span(this.src, this.index, this.index += result))
     }
-    // Если ни один из токенов не дал о себе знать,
-    // то мы наткнулись на неизвестную или неверную часть программы
     throw new UnexpectedToken
   }
 
-  // Реализуем итератор
   [Symbol.iterator]() {
     return {
       next: () => {
@@ -44,9 +33,8 @@ export class Lexer {
     }
   }
 
-  // Вернуть true если всё токенизировали
   get done() {
-    return this.src.length === 0
+    return this.index === this.src.length
   }
 }
 
