@@ -20,7 +20,7 @@ export class Lexer {
     for (const kind of this.kinds) {
       const result = kind.tokenize?.(this.src.slice(this.index)) ?? -1
       if (result === -1) continue
-      return new kind(this.src.slice(this.index, this.index + result), new Span(this.src, this.index, this.index += result))
+      return new kind(this.src.slice(this.index, this.index + result), new Span(this.index, this.index += result))
     }
     throw new UnexpectedToken
   }
@@ -33,6 +33,9 @@ export class Lexer {
     }
   }
 
+  /**
+   * @returns true if end of file reached
+   */
   get done() {
     return this.index === this.src.length
   }
