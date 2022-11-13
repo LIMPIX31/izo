@@ -12,4 +12,4 @@ const Whitespace = kind('Whitespace').main(/[^\S\r\n]+/)
 const kinds = [Number, Asterisk, Slash, OpenParen, CloseParen, Whitespace]
 
 const result = tokenize(new Lexer(src, kinds))
-console.log(result.map(v => v.display()).join('\n'))
+console.log(result)

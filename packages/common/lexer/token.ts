@@ -4,9 +4,9 @@ import { AbstractToken } from '../errors'
 export class Token {
   constructor(readonly value: string, readonly span: Span) {}
 
-  static tokenize(src: string): number {
+  static tokenize(that: any, src: string): number {
     throw new AbstractToken
   }
 }
 
-export type TokenKind = typeof Token
+export type TokenKind<T extends Token = Token> = typeof Token & (new (value: string, span: Span) => T)

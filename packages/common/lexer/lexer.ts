@@ -18,7 +18,7 @@ export class Lexer {
    */
   next() {
     for (const kind of this.kinds) {
-      const result = kind.tokenize?.(this.src.slice(this.index)) ?? -1
+      const result = kind.tokenize?.(this, this.src.slice(this.index)) ?? -1
       if (result === -1) continue
       return new kind(this.src.slice(this.index, this.index + result), new Span(this.index, this.index += result))
     }
